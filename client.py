@@ -27,12 +27,12 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
-TOKEN = "5989508618:AAEvFe652Jk836TpS14p9JP4raf0BuapRdo"
+TOKEN = "xxxx"
 logging.basicConfig(level=logging.INFO)
 
 
 # прокси
-proxy_url = "http://proxy.server:3128"
+proxy_url = "xxxx"
 
 
 bot = Bot(token=TOKEN, proxy=proxy_url)
