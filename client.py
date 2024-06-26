@@ -43,11 +43,11 @@ dp = Dispatcher(bot, storage = MemoryStorage())
 # Функция (запуск бота)
 async def on_startup(dp):
 	await db.db_start()
-	await bot.send_message(1727165738, "Я запустился")
+	await bot.send_message(xxxx, "Я запустился")
 
 # Функция (выключение бота)
 async def on_shutdown(dp):
-	await bot.send_message(1727165738, "Я завершил работу")
+	await bot.send_message(xxxx, "Я завершил работу")
 
 
 # Картинки для менюшек
