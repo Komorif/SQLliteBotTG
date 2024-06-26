@@ -87,9 +87,10 @@ async def command_start(message: types.Message):
 
     # Начало
     await NewOrder.type.set()
-
-    await bot.send_photo(message.from_user.id, photo=menu_one, caption="Приветствую тебя в боте для нахождения друзей из Майншилд комьюнити! Для начала заполним небольшую анкету.", reply_markup=mainMenu_mineShield)
     await set_starting_commands(bot, message.from_user.id)
+	
+    await message.answer('Приветствую тебя в боте для нахождения друзей из Майншилд комьюнити! Для начала заполним небольшую анкету. Напиши если готов', reply_markup=mainMenu_in_name)
+	
 
 
 # /help
@@ -198,72 +199,60 @@ class NewOrder(StatesGroup):
 
 
 
-
 @dp.message_handler(commands="test")
 async def add_item(message: types.Message):
 	await NewOrder.type.set()
 	await message.answer('Выберите тип товара', reply_markup=mainMenu_in_name)
+	
+	async with state.proxy() as data:
+            data['type'] = call.data
+        await call.message.answer('Напишите название карточки')
+        await NewOrder.next()
 
 
-@dp.callback_query_handler(state=NewOrder.type)
-async def it_buttons_en(call: types.CallbackQuery, state: FSMContext):
-    #image = menu_one
+	
 
-    async with state.proxy() as data:
-        data['type'] = call.data
-    await call.message.answer('Напишите название товара: ')
-    await NewOrder.next()
-    
 
-# Имя
+
+
 @dp.message_handler(state=NewOrder.name)
-async def process_name(message: types.Message, state: FSMContext):
+async def add_item_name(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['name'] = message.text
-
-    await call.message.answer(f"Введите ваш возраст:", reply_markup=mainMenu_in_name)
+    await message.answer('Ваше имя')
     await NewOrder.next()
 
 
-# Возраст
 @dp.message_handler(state=NewOrder.years)
-async def process_years(message: types.Message, state: FSMContext):
+async def add_item_desc(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data['years'] = message.text
-
-    await call.message.answer(f"Введите сколько вам лет:", reply_markup=mainMenu_in_years)
+        data['desc'] = message.text
+    await message.answer('Введите сколько вам лет')
     await NewOrder.next()
 
 
-# Блогер
 @dp.message_handler(state=NewOrder.blogger)
-async def process_blogger(message: types.Message, state: FSMContext):
+async def add_item_desc(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data['blogger'] = message.text
-
-    await call.message.answer(f"Ваш ютубер:", reply_markup=mainMenu_in_blogger)
+        data['price'] = message.text
+    await message.answer('Ваш ютубер:')
     await NewOrder.next()
 
 
-# О вас
 @dp.message_handler(state=NewOrder.hobbies)
-async def process_hobby(message: types.Message, state: FSMContext):
+async def add_item_desc(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data['hobbies'] = message.text
-
-    await call.message.answer(f"Расскажите о вас:", reply_markup=mainMenu_in_hobbies)
+        data['price'] = message.text
+    await message.answer('Расскажите о вас:')
     await NewOrder.next()
 
 
-# Город
 @dp.message_handler(state=NewOrder.city)
-async def process_hobby(message: types.Message, state: FSMContext):
+async def add_item_desc(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data['city'] = message.text
-
-    await call.message.answer(f"Город:", reply_markup=mainMenu_in_city)
+        data['price'] = message.text
+    await message.answer('Ваш Город')
     await NewOrder.next()
-
 
 
 # Готово
@@ -272,18 +261,6 @@ async def add_item_photo(message: types.Message, state: FSMContext):
     await db.add_item(state)
     await message.answer('Товар успешно создан!')
     await state.finish()
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
