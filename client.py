@@ -27,12 +27,12 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
-TOKEN = "5989508618:AAEvFe652Jk836TpS14p9JP4raf0BuapRdo"
+TOKEN = "xxxx"
 logging.basicConfig(level=logging.INFO)
 
 
 # прокси
-proxy_url = "http://proxy.server:3128"
+proxy_url = "xxxxx"
 
 
 bot = Bot(token=TOKEN, proxy=proxy_url)
@@ -43,11 +43,11 @@ dp = Dispatcher(bot, storage = MemoryStorage())
 # Функция (запуск бота)
 async def on_startup(dp):
 	await db.db_start()
-	await bot.send_message(1727165738, "Я запустился")
+	await bot.send_message(xxxxx, "Я запустился")
 
 # Функция (выключение бота)
 async def on_shutdown(dp):
-	await bot.send_message(1727165738, "Я завершил работу")
+	await bot.send_message(xxxxx, "Я завершил работу")
 
 
 # Картинки для менюшек
