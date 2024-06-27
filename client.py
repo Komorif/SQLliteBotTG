@@ -27,12 +27,12 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
-TOKEN = "xxxx"
+TOKEN = "5989508618:AAEvFe652Jk836TpS14p9JP4raf0BuapRdo"
 logging.basicConfig(level=logging.INFO)
 
 
 # прокси
-proxy_url = "xxxx"
+proxy_url = "http://proxy.server:3128"
 
 
 bot = Bot(token=TOKEN, proxy=proxy_url)
@@ -43,11 +43,11 @@ dp = Dispatcher(bot, storage = MemoryStorage())
 # Функция (запуск бота)
 async def on_startup(dp):
 	await db.db_start()
-	await bot.send_message(xxxx, "Я запустился")
+	await bot.send_message(1727165738, "Я запустился")
 
 # Функция (выключение бота)
 async def on_shutdown(dp):
-	await bot.send_message(xxxx, "Я завершил работу")
+	await bot.send_message(1727165738, "Я завершил работу")
 
 
 # Картинки для менюшек
@@ -85,12 +85,11 @@ async def set_starting_commands(bot: Bot, chat_id: int):
 async def command_start(message: types.Message):
     await db.cmd_start_db(message.from_user.id)
 
-    # Начало
     await NewOrder.type.set()
+
     await set_starting_commands(bot, message.from_user.id)
-	
-    await message.answer('Приветствую тебя в боте для нахождения друзей из Майншилд комьюнити! Для начала заполним небольшую анкету. Напиши если готов', reply_markup=mainMenu_in_name)
-	
+
+    await message.answer('Приветствую тебя в боте для нахождения друзей из Майншилд комьюнити! Для начала заполним небольшую анкету. Напиши если готов', reply_markup=back_name)
 
 
 # /help
@@ -124,33 +123,6 @@ async def edit_message(call: types.CallbackQuery, photo,
 
 	await call.message.edit_caption(caption, parse_mode="HTML")
 	await call.message.edit_reply_markup(reply_markup=kb)
-
-
-# Отдельный back с mainmenu на выбор языков rus
-@dp.callback_query_handler(text_contains="back_")
-async def back_buttons_en(call: types.CallbackQuery):
-
-	# Условия для всех назад кнопок назад
-	if call.data == "back_name":
-		image = menu_one
-		await edit_message(call, photo=image, caption="Продолжай заполнять анкету...", kb=mainMenu_mineShield)
-
-	elif call.data == "back_years":
-		image = menu_one
-		await edit_message(call, photo=image, caption="Продолжай заполнять анкету...", kb=mainMenu_mineShield)
-
-	elif call.data == "back_blogger":
-		image = menu_one
-		await edit_message(call, photo=image, caption="Продолжай заполнять анкету...", kb=mainMenu_mineShield)
-
-	elif call.data == "back_hobbies":
-		image = menu_one
-		await edit_message(call, photo=image, caption="Продолжай заполнять анкету...", kb=mainMenu_mineShield)
-
-	elif call.data == "back_city":
-		image = menu_one
-		await edit_message(call, photo=image, caption="Продолжай заполнять анкету...", kb=mainMenu_mineShield)
-
 
 
 
@@ -189,6 +161,7 @@ async def back_buttons_en(call: types.CallbackQuery):
 
 
 
+
 class NewOrder(StatesGroup):
     type = State()
     name = State()
@@ -199,68 +172,77 @@ class NewOrder(StatesGroup):
 
 
 
+
+
 @dp.message_handler(commands="test")
 async def add_item(message: types.Message):
-	await NewOrder.type.set()
-	await message.answer('Выберите тип товара', reply_markup=mainMenu_in_name)
-	
-	async with state.proxy() as data:
-            data['type'] = call.data
-        await call.message.answer('Напишите название карточки')
-        await NewOrder.next()
 
-
-	
+    await NewOrder.type.set()
+    await message.answer('Выберите что хотите', reply_markup=mainMenu_mineShield)
 
 
 
 
+# тайпим
+@dp.callback_query_handler(state=NewOrder.type)
+async def typing(call: types.CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        data['type'] = call.data
+    await call.message.answer('Напишите ваше имя')
+    await NewOrder.next()
+
+
+# имя
 @dp.message_handler(state=NewOrder.name)
 async def add_item_name(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['name'] = message.text
-    await message.answer('Ваше имя')
-    await NewOrder.next()
-
-
-@dp.message_handler(state=NewOrder.years)
-async def add_item_desc(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        data['desc'] = message.text
     await message.answer('Введите сколько вам лет')
     await NewOrder.next()
 
 
-@dp.message_handler(state=NewOrder.blogger)
-async def add_item_desc(message: types.Message, state: FSMContext):
+@dp.message_handler(state=NewOrder.years)
+async def add_item_years(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data['price'] = message.text
-    await message.answer('Ваш ютубер:')
+        data['years'] = message.text
+    await message.answer('Ваш ютубер')
+    await NewOrder.next()
+
+
+@dp.message_handler(state=NewOrder.blogger)
+async def add_item_blogger(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['blogger'] = message.text
+    await message.answer('Расскажите о вас')
     await NewOrder.next()
 
 
 @dp.message_handler(state=NewOrder.hobbies)
-async def add_item_desc(message: types.Message, state: FSMContext):
+async def add_item_hobbies(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data['price'] = message.text
-    await message.answer('Расскажите о вас:')
+        data['hobbies'] = message.text
+    await message.answer('Ваш Город')
+
     await NewOrder.next()
 
 
 @dp.message_handler(state=NewOrder.city)
-async def add_item_desc(message: types.Message, state: FSMContext):
+async def add_item_city(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data['price'] = message.text
-    await message.answer('Ваш Город')
-    await NewOrder.next()
+        data['city'] = message.text
 
-
-# Готово
-@dp.message_handler(state=NewOrder)
-async def add_item_photo(message: types.Message, state: FSMContext):
     await db.add_item(state)
-    await message.answer('Товар успешно создан!')
+    await message.answer("Товар успешно создан!")
     await state.finish()
+
+
+
+
+
+
+
+
+
 
 
 
