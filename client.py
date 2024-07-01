@@ -118,6 +118,7 @@ class NewOrder(StatesGroup):
     blogger = State()
     hobbies = State()
     city = State()
+    current_user_index = State()
 
 
 
@@ -189,7 +190,7 @@ from aiogram.dispatcher.filters import Text
 
 # /find_similar
 @dp.message_handler(commands='find_similar')
-async def find_similar(message: types.Message):
+async def find_similar(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     similar_users = await db.get_similar_users(user_id)
 
@@ -197,26 +198,63 @@ async def find_similar(message: types.Message):
         await message.answer("Для вас не найдено пользователей с похожими параметрами(")
         return
 
-    for user in similar_users:
+    async with state.proxy() as data:
+        data['similar_users'] = similar_users
+        data['current_user_index'] = 0
 
-        image = menu_one
+    await show_user(message, state)
 
-        await message.answer_photo(photo=image,
-            caption=f"Пользователь с которым возможно вы найдете общий язык\n\n"
-            f"Ник: @{user[1]}\n"
+
+# Функция для показа текущего пользователя
+async def show_user(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        current_index = data['current_user_index']
+        similar_users = data['similar_users']
+
+    if current_index >= len(similar_users):
+        await message.answer("Это были все пользователи с похожими параметрами, доступные на данный момент.")
+        await state.finish()
+        return
+
+    user = similar_users[current_index]
+    image = menu_one
+
+    await message.answer_photo(
+        photo=image,
+        caption=(
+            f"Пользователь с которым возможно вы найдете общий язык\n\n"
             f"Имя: {user[2]}\n"
             f"Возраст: {user[3]}\n"
             f"Любимый блогер: {user[4]}\n"
             f"О себе: {user[5]}\n"
-            f"Город: {user[6]}", reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(text="Нравится💘", callback_data=f"like_{user[1]}"))
+            f"Город: {user[6]}"
+        ),
+        reply_markup=InlineKeyboardMarkup().add(
+            InlineKeyboardButton(text="Нравится💘", callback_data=f"like_{user[1]}"),
+            InlineKeyboardButton(text="Не нравится👎🏻", callback_data="dislike")
         )
+    )
+
+
+# Обработчик нажатия кнопки "Не нравится"
+@dp.callback_query_handler(lambda c: c.data == 'dislike')
+async def process_callback_dislike(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
+
+    await bot.answer_callback_query(callback_query.id)
+
+    async with state.proxy() as data:
+        data['current_user_index'] += 1
+
+    await show_user(callback_query.message, state)
 
 
 
-
-
+# Обработчик нажатия кнопки "Нравится"
 @dp.callback_query_handler(lambda c: c.data and c.data.startswith('like_'))
-async def process_callback_like(callback_query: types.CallbackQuery):
+async def process_callback_like(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
+
     username = callback_query.data.split('_')[1]  # Получаем имя пользователя из callback_data
     await bot.send_message(
         chat_id=callback_query.from_user.id,
@@ -224,8 +262,7 @@ async def process_callback_like(callback_query: types.CallbackQuery):
     )
     await bot.answer_callback_query(callback_query.id)
 
-
-
+    await state.finish()
 
 
 
