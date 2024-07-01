@@ -14,7 +14,7 @@ mainMenu_mineShield.add(mainMenu_in_registration)
 
 
 # Кнопка назад
-back_button = InlineKeyboardMarkup(row_width=2)
-back = InlineKeyboardButton(text="Назад", callback_data="back")
+like_button = InlineKeyboardMarkup(row_width=2)
+like = InlineKeyboardButton(text="Нравится💘", callback_data="like")
 
-back_button.add(back)
+like_button.add(like)
