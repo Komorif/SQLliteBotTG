@@ -27,12 +27,12 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
-TOKEN = "xxxxx"
+TOKEN = "7426123760:AAE5A37EtK25XpQX1fp62v_9i4sXMTb0uck"   #7426123760:AAE5A37EtK25XpQX1fp62v_9i4sXMTb0uck <-- бот леры
 logging.basicConfig(level=logging.INFO)
 
 
 # прокси
-proxy_url = "xxxxx"
+proxy_url = "http://proxy.server:3128"
 
 
 bot = Bot(token=TOKEN, proxy=proxy_url)
@@ -43,11 +43,11 @@ dp = Dispatcher(bot, storage = MemoryStorage())
 # Функция (запуск бота)
 async def on_startup(dp):
 	await db.db_start()
-	await bot.send_message(xxxxx, "Я запустился")
+	await bot.send_message(1727165738, "Я запустился")
 
 # Функция (выключение бота)
 async def on_shutdown(dp):
-	await bot.send_message(xxxxx, "Я завершил работу")
+	await bot.send_message(1727165738, "Я завершил работу")
 
 
 # Картинки для менюшек
@@ -63,11 +63,13 @@ async def set_starting_commands(bot: Bot, chat_id: int):
 			BotCommand("start", "Команда start запускает бота, начать сначала"), # /start
 			BotCommand("help", "Вывести информацию по боту"), # /help
 			BotCommand("id", "Узнать свой id"), # /id
+			BotCommand("find_similar", "Найти единомышлиников"), # /find_similar
 		],
 		"en": [
 			BotCommand("start", "Restart bot"), # /start
 			BotCommand("help", "Info about bot"), # /help
 			BotCommand("id", "Find your id"), # /id
+			BotCommand("find_similar", "Find like-minded people"), # /find_similar
 		]
 	}
     for language, commands in STARTING_COMMANDS.items():
@@ -78,15 +80,22 @@ async def set_starting_commands(bot: Bot, chat_id: int):
 		)
 
 
-# Флаг
-
-
+# /start
 @dp.message_handler(commands=['start'])
-async def send_welcome(message: types.Message):
-    await NewOrder.type.set()
-    image=menu_one
-    await message.answer_photo(photo=image, caption='Приветствую тебя в боте для нахождения друзей из Майншилд комьюнити!\nДля начала заполним небольшую анкету.', reply_markup=mainMenu_mineShield)
+async def send_welcome(message: types.Message, state: FSMContext):
 
+    user_id = message.from_user.id
+
+    # Если id пользователя внесен в БД
+    if await db.user_exists(user_id):
+        await message.answer("Вы уже зарегистрировались!")
+
+    # Если id пользователя новый
+    else:
+        await NewOrder.type.set()
+
+        image = menu_one
+        await message.answer_photo(photo=image, caption='Приветствую тебя в боте для нахождения друзей из Майншилд комьюнити!\nДля начала заполним небольшую анкету.', reply_markup=mainMenu_mineShield)
 
 
 # /help
@@ -115,12 +124,14 @@ class NewOrder(StatesGroup):
 # Имя
 @dp.callback_query_handler(state=NewOrder.type)
 async def typing(call: types.CallbackQuery, state: FSMContext):
-
     await call.message.delete()
 
     async with state.proxy() as data:
         data['type'] = call.data
-    await call.message.answer('Напишите ваше имя')
+        data['user_id'] = call.from_user.id
+        data['username'] = call.from_user.username
+
+    await call.message.answer('Введите ваше имя')
     await NewOrder.next()
 
 
@@ -138,7 +149,7 @@ async def add_item_name(message: types.Message, state: FSMContext):
 async def add_item_years(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['years'] = message.text
-    await message.answer('Любимый блогер (из мш и мша)')
+    await message.answer('Любимый блогер (из мш и мша (можно несколько))')
     await NewOrder.next()
 
 
@@ -156,7 +167,7 @@ async def add_item_blogger(message: types.Message, state: FSMContext):
 async def add_item_hobbies(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['hobbies'] = message.text
-    await message.answer('Ваш Город(можно не указывать)')
+    await message.answer('Ваш Город(можно не указывать - пропишите нет)')
 
     await NewOrder.next()
 
@@ -168,14 +179,59 @@ async def add_item_city(message: types.Message, state: FSMContext):
         data['city'] = message.text
 
     await db.add_item(state)
-    await message.answer("вы успешно зарегистрировались!")
+    await message.answer("Вы успешно зарегистрировались!")
     await state.finish()
+
+
+
+
+from aiogram.dispatcher.filters import Text
+
+# /find_similar
+@dp.message_handler(commands='find_similar')
+async def find_similar(message: types.Message):
+    user_id = message.from_user.id
+    similar_users = await db.get_similar_users(user_id)
+
+    if not similar_users:
+        await message.answer("Для вас не найдено пользователей с похожими параметрами(")
+        return
+
+    for user in similar_users:
+
+        image = menu_one
+
+        await message.answer_photo(photo=image,
+            caption=f"Пользователь с которым возможно вы найдете общий язык\n\n"
+            f"Ник: @{user[1]}\n"
+            f"Имя: {user[2]}\n"
+            f"Возраст: {user[3]}\n"
+            f"Любимый блогер: {user[4]}\n"
+            f"О себе: {user[5]}\n"
+            f"Город: {user[6]}", reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(text="Нравится💘", callback_data=f"like_{user[1]}"))
+        )
+
+
+
+
+
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith('like_'))
+async def process_callback_like(callback_query: types.CallbackQuery):
+    username = callback_query.data.split('_')[1]  # Получаем имя пользователя из callback_data
+    await bot.send_message(
+        chat_id=callback_query.from_user.id,
+        text=f"Для начала общения напишите @{username}\nУдачного общения!"
+    )
+    await bot.answer_callback_query(callback_query.id)
+
+
+
 
 
 
 # Register dispather
 def register_handlers_client(dp : Dispatcher):
-  dp.register_message_handler(command_start, commands=["start"])
+    dp.register_message_handler(command_start, commands=["start"])
 
 if __name__ == "__main__":
-	executor.start_polling(dp, on_startup=on_startup, on_shutdown=on_shutdown)
+    executor.start_polling(dp, on_startup=on_startup, on_shutdown=on_shutdown)
